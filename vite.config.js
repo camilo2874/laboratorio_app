@@ -3,8 +3,9 @@ import react from '@vitejs/plugin-react';
 
 export default defineConfig({
   plugins: [react()],
-  base: "./", // 👈 Importante para evitar rutas incorrectas
+  base: "./",  // ✅ Corrige rutas en producción
   build: {
-    outDir: "dist", // 👈 Asegura que Vercel use la carpeta correcta
+    outDir: "dist",  // ✅ Asegura que los archivos estén en `dist/`
+    assetsDir: "assets",  // ✅ Mueve los archivos JS/CSS a `dist/assets/`
   }
 });
