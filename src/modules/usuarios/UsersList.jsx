@@ -3,8 +3,10 @@ import axios from "axios";
 import {
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, 
   CircularProgress, Alert, TextField, Select, MenuItem, Button, TablePagination, 
-  Dialog, DialogActions, DialogContent, DialogTitle
+  Dialog, DialogActions, DialogContent, DialogTitle, Switch, IconButton
 } from "@mui/material";
+import EditIcon from "@mui/icons-material/Edit";
+import DeleteIcon from "@mui/icons-material/Delete";
 
 const UsersList = () => {
   const [users, setUsers] = useState([]);
@@ -92,6 +94,10 @@ const UsersList = () => {
       telefono: editUser.telefono,
       direccion: editUser.direccion,
       email: editUser.email,
+      rol: {
+        nombre: editUser.rol.nombre,
+        permisos: editUser.rol.permisos
+      }
     };
 
     console.log("📩 Datos enviados:", JSON.stringify(datosActualizados, null, 2));
@@ -138,6 +144,38 @@ const UsersList = () => {
     }
   };
 
+  // 📌 Activar/desactivar usuario
+  const handleToggleActivo = async (userId, nuevoEstado) => {
+    const token = localStorage.getItem("token");
+
+    try {
+      const response = await axios.put(
+        `https://unificado-u.onrender.com/api/usuarios/${userId}/activo`,
+        { activo: nuevoEstado },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+
+      console.log("✔ Estado actualizado:", response.data);
+
+      setUsers(users.map(user => 
+        user._id === userId ? { ...user, activo: nuevoEstado } : user
+      ));
+      setFilteredUsers(filteredUsers.map(user => 
+        user._id === userId ? { ...user, activo: nuevoEstado } : user
+      ));
+
+      alert(`Usuario ${nuevoEstado ? "activado" : "desactivado"} con éxito.`);
+    } catch (error) {
+      console.error("❌ Error al actualizar el estado:", error);
+      alert(error.response?.data?.message || "Error al actualizar el estado del usuario.");
+    }
+  };
+
   if (loading) return <CircularProgress sx={{ display: "block", margin: "20px auto" }} />;
   if (error) return <Alert severity="error" sx={{ margin: "20px" }}>{error}</Alert>;
 
@@ -151,10 +189,10 @@ const UsersList = () => {
         sx={{ marginBottom: 2 }}
       >
         <MenuItem value="todos">Todos</MenuItem>
-        <MenuItem value="Cliente">Cliente</MenuItem>
-        <MenuItem value="Laboratorista">Laboratorista</MenuItem>
-        <MenuItem value="Administrador">Administrador</MenuItem>
-        <MenuItem value="Super_admin">Super Administrador</MenuItem>
+        <MenuItem value="cliente">Cliente</MenuItem>
+        <MenuItem value="laboratorista">Laboratorista</MenuItem>
+        <MenuItem value="administrador">Administrador</MenuItem>
+        <MenuItem value="super_admin">Super Administrador</MenuItem>
       </Select>
 
       {/* Buscador */}
@@ -176,6 +214,8 @@ const UsersList = () => {
               <TableCell sx={{ color: "white", fontWeight: "bold" }}>Teléfono</TableCell>
               <TableCell sx={{ color: "white", fontWeight: "bold" }}>Dirección</TableCell>
               <TableCell sx={{ color: "white", fontWeight: "bold" }}>Email</TableCell>
+              <TableCell sx={{ color: "white", fontWeight: "bold" }}>Rol</TableCell>
+              <TableCell sx={{ color: "white", fontWeight: "bold" }}>Activo</TableCell>
               <TableCell sx={{ color: "white", fontWeight: "bold" }}>Acciones</TableCell>
             </TableRow>
           </TableHead>
@@ -187,13 +227,29 @@ const UsersList = () => {
                 <TableCell>{user.telefono}</TableCell>
                 <TableCell>{user.direccion}</TableCell>
                 <TableCell>{user.email}</TableCell>
+                <TableCell>{user.rol?.nombre}</TableCell>
                 <TableCell>
-                  <Button variant="contained" color="primary" onClick={() => handleEditClick(user)}>
-                    Editar
-                  </Button>
-                  <Button variant="contained" color="error" onClick={() => handleDelete(user._id)}>
-                    Eliminar
-                  </Button>
+                  <Switch
+                    checked={user.activo}
+                    onChange={() => handleToggleActivo(user._id, !user.activo)}
+                    color="primary"
+                  />
+                </TableCell>
+                <TableCell>
+                  <IconButton
+                    color="primary"
+                    onClick={() => handleEditClick(user)}
+                    aria-label="editar"
+                  >
+                    <EditIcon />
+                  </IconButton>
+                  <IconButton
+                    color="error"
+                    onClick={() => handleDelete(user._id)}
+                    aria-label="eliminar"
+                  >
+                    <DeleteIcon />
+                  </IconButton>
                 </TableCell>
               </TableRow>
             ))}
@@ -217,8 +273,29 @@ const UsersList = () => {
         <DialogTitle>Editar Usuario</DialogTitle>
         <DialogContent>
           {["nombre", "documento", "telefono", "direccion", "email"].map(field => (
-            <TextField key={field} fullWidth margin="dense" label={field} value={editUser?.[field] || ""} onChange={(e) => setEditUser({ ...editUser, [field]: e.target.value })} />
+            <TextField
+              key={field}
+              fullWidth
+              margin="dense"
+              label={field}
+              value={editUser?.[field] || ""}
+              onChange={(e) => setEditUser({ ...editUser, [field]: e.target.value })}
+            />
           ))}
+
+          {/* Campo para cambiar el tipo de usuario */}
+          <Select
+            value={editUser?.rol?.nombre || ""}
+            onChange={(e) => setEditUser({ ...editUser, rol: { ...editUser.rol, nombre: e.target.value } })}
+            fullWidth
+            margin="dense"
+            sx={{ marginTop: 2 }}
+          >
+            <MenuItem value="cliente">Cliente</MenuItem>
+            <MenuItem value="laboratorista">Laboratorista</MenuItem>
+            <MenuItem value="administrador">Administrador</MenuItem>
+            <MenuItem value="super_admin">Super Administrador</MenuItem>
+          </Select>
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseEdit}>Cancelar</Button>

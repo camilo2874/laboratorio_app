@@ -6,8 +6,14 @@ import senaLogo from "../assets/sena-logo.png"; // Importamos el logo
 
 import {
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, 
-  CircularProgress, Alert, TextField, Select, MenuItem, Button, TablePagination
+  CircularProgress, Alert, TextField, Select, MenuItem, Button, TablePagination,
+  Modal, Box, Typography, IconButton, Checkbox, FormControlLabel
 } from "@mui/material";
+
+// Importar iconos
+import VisibilityIcon from "@mui/icons-material/Visibility";
+import DownloadIcon from "@mui/icons-material/Download";
+import EditIcon from "@mui/icons-material/Edit";
 
 const Muestras = () => {
   const [muestras, setMuestras] = useState([]);
@@ -18,6 +24,20 @@ const Muestras = () => {
   const [filterType, setFilterType] = useState("todos");
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
+  const [selectedMuestra, setSelectedMuestra] = useState(null);
+  const [editingMuestra, setEditingMuestra] = useState(null); // Estado para la muestra en edición
+
+  // Estilo para el modal
+  const modalStyle = {
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
+    transform: 'translate(-50%, -50%)',
+    width: 400,
+    bgcolor: 'background.paper',
+    boxShadow: 24,
+    p: 4,
+  };
 
   // 📌 Cargar muestras y asociar con clientes
   useEffect(() => {
@@ -124,6 +144,34 @@ const Muestras = () => {
     }
   };
 
+  // 📌 Editar muestra
+  const handleEditMuestra = (muestra) => {
+    setEditingMuestra(muestra); // Abrir el modal de edición con los datos de la muestra
+  };
+
+  const handleSaveEdit = async () => {
+    try {
+      const response = await axios.put(
+        `https://backendregistromuestra.onrender.com/muestras/${editingMuestra.id_muestra}`,
+        editingMuestra,
+        {
+          headers: { "Content-Type": "application/json" },
+        }
+      );
+
+      // Actualizar el estado de las muestras
+      const updatedMuestras = muestras.map((m) =>
+        m.id_muestra === editingMuestra.id_muestra ? editingMuestra : m
+      );
+      setMuestras(updatedMuestras);
+      setFilteredMuestras(updatedMuestras);
+
+      setEditingMuestra(null); // Cerrar el modal de edición
+    } catch (error) {
+      setError("⚠ Error al actualizar la muestra.");
+    }
+  };
+
   if (loading) return <CircularProgress sx={{ display: "block", margin: "20px auto" }} />;
   if (error) return <Alert severity="error" sx={{ margin: "20px" }}>{error}</Alert>;
 
@@ -168,7 +216,11 @@ const Muestras = () => {
           </TableHead>
           <TableBody>
             {filteredMuestras.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((muestra) => (
-              <TableRow key={muestra.id_muestra}>
+              <TableRow 
+                key={muestra.id_muestra} 
+                onClick={() => setSelectedMuestra(muestra)}
+                style={{ cursor: 'pointer' }}
+              >
                 <TableCell>{muestra.id_muestra || "N/A"}</TableCell>
                 <TableCell>{muestra.nombreCliente || "No encontrado"}</TableCell>
                 <TableCell>{muestra.telefono || "No encontrado"}</TableCell>
@@ -176,8 +228,24 @@ const Muestras = () => {
                 <TableCell>{muestra.fechaHora ? new Date(muestra.fechaHora).toLocaleDateString() : "N/A"}</TableCell>
                 <TableCell>{muestra.analisisSeleccionados ? muestra.analisisSeleccionados.join(", ") : "Ninguno"}</TableCell>
                 <TableCell>
-                  <Button variant="contained" color= "secondary" onClick={() => generarPDFMuestra(muestra, true)}>Visualizar</Button>
-                  <Button variant="contained" color="error" onClick={() => generarPDFMuestra(muestra)}>Descargar</Button>
+                  <IconButton 
+                    color="secondary" 
+                    onClick={(e) => { e.stopPropagation(); generarPDFMuestra(muestra, true); }}
+                  >
+                    <VisibilityIcon />
+                  </IconButton>
+                  <IconButton 
+                    color="error" 
+                    onClick={(e) => { e.stopPropagation(); generarPDFMuestra(muestra); }}
+                  >
+                    <DownloadIcon />
+                  </IconButton>
+                  <IconButton 
+                    color="primary" 
+                    onClick={(e) => { e.stopPropagation(); handleEditMuestra(muestra); }}
+                  >
+                    <EditIcon />
+                  </IconButton>
                 </TableCell>
               </TableRow>
             ))}
@@ -185,6 +253,7 @@ const Muestras = () => {
         </Table>
       </TableContainer>
 
+      {/* Paginación */}
       <TablePagination
         component="div"
         count={filteredMuestras.length}
@@ -193,6 +262,96 @@ const Muestras = () => {
         rowsPerPage={rowsPerPage}
         onRowsPerPageChange={handleChangeRowsPerPage}
       />
+
+      {/* Modal para ver detalles de la muestra */}
+      <Modal
+        open={selectedMuestra !== null}
+        onClose={() => setSelectedMuestra(null)}
+      >
+        <Box sx={modalStyle}>
+          <Typography variant="h6" component="h2">
+            Detalles de la Muestra
+          </Typography>
+          {selectedMuestra && (
+            <>
+              <Typography>ID: {selectedMuestra.id_muestra}</Typography>
+              <Typography>Cliente: {selectedMuestra.nombreCliente}</Typography>
+              <Typography>Teléfono: {selectedMuestra.telefono}</Typography>
+              <Typography>Tipo: {selectedMuestra.tipoMuestreo}</Typography>
+              <Typography>Fecha: {new Date(selectedMuestra.fechaHora).toLocaleDateString()}</Typography>
+              <Typography>Análisis: {selectedMuestra.analisisSeleccionados?.join(", ") || "Ninguno"}</Typography>
+            </>
+          )}
+        </Box>
+      </Modal>
+
+      {/* Modal para editar muestra */}
+      <Modal
+        open={editingMuestra !== null}
+        onClose={() => setEditingMuestra(null)}
+      >
+        <Box sx={modalStyle}>
+          <Typography variant="h6" component="h2">
+            Editar Muestra
+          </Typography>
+          {editingMuestra && (
+            <>
+              <TextField
+                fullWidth
+                label="Tipo de Muestreo"
+                value={editingMuestra.tipoMuestreo}
+                onChange={(e) => setEditingMuestra({ ...editingMuestra, tipoMuestreo: e.target.value })}
+                sx={{ marginBottom: 2 }}
+              />
+              <TextField
+                fullWidth
+                label="Fecha y Hora"
+                type="datetime-local"
+                value={editingMuestra.fechaHora}
+                onChange={(e) => setEditingMuestra({ ...editingMuestra, fechaHora: e.target.value })}
+                sx={{ marginBottom: 2 }}
+              />
+              <Typography variant="body1">Análisis a realizar:</Typography>
+              {[
+                "PH",
+                "Conductividad",
+                "Turbiedad",
+                "Cloro Residual",
+                "Metales Pesados",
+              ].map((analisis) => (
+                <FormControlLabel
+                  key={analisis}
+                  control={
+                    <Checkbox
+                      value={analisis}
+                      checked={editingMuestra.analisisSeleccionados?.includes(analisis)}
+                      onChange={(e) => {
+                        const { value, checked } = e.target;
+                        setEditingMuestra((prev) => ({
+                          ...prev,
+                          analisisSeleccionados: checked
+                            ? [...prev.analisisSeleccionados, value]
+                            : prev.analisisSeleccionados.filter((item) => item !== value),
+                        }));
+                      }}
+                    />
+                  }
+                  label={analisis}
+                />
+              ))}
+              <Button 
+                variant="contained" 
+                color="primary" 
+                fullWidth 
+                onClick={handleSaveEdit}
+                sx={{ marginTop: 2 }}
+              >
+                Guardar Cambios
+              </Button>
+            </>
+          )}
+        </Box>
+      </Modal>
     </Paper>
   );
 };
