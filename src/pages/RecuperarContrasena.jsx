@@ -16,17 +16,19 @@ const RecuperarContrasena = () => {
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
 
+  // Manejar cambios en el input
   const handleChange = (e) => {
     setEmail(e.target.value);
   };
 
+  // Manejar envío del formulario
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
     setMensaje(null);
     setLoading(true);
 
-    // Validar que el correo no esté vacío
+    // Validación básica del email
     if (!email) {
       setError("⚠ Debes ingresar un correo electrónico.");
       setLoading(false);
@@ -39,24 +41,19 @@ const RecuperarContrasena = () => {
     }
 
     try {
-      // Enviar solicitud de recuperación de contraseña a la API
-      const url = "https://back-usuarios-f.onrender.com/api/usuarios/solicitar-recuperacion";
+      // URL de la API desde variable de entorno
+      const url = `${import.meta.env.VITE_BACKEND_URL}/api/usuarios/solicitar-recuperacion`;
+      
+      // Enviar solicitud a la API
       const response = await axios.post(url, { email });
 
-      // Si el servidor devuelve status 200, asumimos que se procesó correctamente
       if (response.status === 200) {
-        // Tu servidor envía algo como:
-        // {
-        //   "mensaje": "Si el correo existe en nuestra base de datos...",
-        //   "detalles": "El enlace de recuperación es válido por 1 hora..."
-        // }
-        setMensaje(response.data.mensaje);
+        setMensaje("✅ Si el correo existe, se enviará un enlace de recuperación.");
       } else {
-        // Cualquier otro status code lo tratamos como error
         setError("⚠ No se pudo procesar la solicitud.");
       }
     } catch (error) {
-      console.error(error);
+      console.error("Error en la recuperación:", error);
       setError("❌ Error al conectar con el servidor.");
     } finally {
       setLoading(false);
@@ -72,9 +69,9 @@ const RecuperarContrasena = () => {
         height: "100vh"
       }}
     >
-      <Paper sx={{ padding: 4, width: 320, textAlign: "center" }}>
+      <Paper sx={{ padding: 4, width: 350, textAlign: "center", boxShadow: 3 }}>
         <Typography variant="h5" sx={{ marginBottom: 2, fontWeight: "bold" }}>
-          Recuperar Contraseña
+          🔑 Recuperar Contraseña
         </Typography>
 
         {mensaje && <Alert severity="success">{mensaje}</Alert>}
@@ -86,29 +83,34 @@ const RecuperarContrasena = () => {
           sx={{ display: "flex", flexDirection: "column", gap: 2 }}
         >
           <TextField
-            label="Correo"
+            label="Correo electrónico"
             name="email"
             type="email"
+            value={email}
             onChange={handleChange}
             fullWidth
             required
           />
 
           {loading ? (
-            <CircularProgress
-              size={24}
-              sx={{ alignSelf: "center", margin: 2 }}
-            />
+            <CircularProgress size={24} sx={{ alignSelf: "center", margin: 2 }} />
           ) : (
             <Button
               type="submit"
               variant="contained"
               sx={{ backgroundColor: "#39A900", color: "white" }}
+              fullWidth
             >
               Enviar correo
             </Button>
           )}
         </Box>
+
+        <Typography variant="body2" sx={{ marginTop: 2 }}>
+          <a href="/login" style={{ color: "#39A900", textDecoration: "none" }}>
+            Volver al inicio de sesión
+          </a>
+        </Typography>
       </Paper>
     </Box>
   );
