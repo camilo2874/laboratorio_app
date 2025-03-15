@@ -18,7 +18,8 @@ const AppRouter = () => {
         {/* Rutas públicas */}
         <Route path="/login" element={<Login />} />
         <Route path="/recuperar-contrasena" element={<RecuperarContrasena />} />
-        <Route path="/cambiar-contrasena/:token" element={<CambiarContrasena />} /> 
+        <Route path="/restablecer-password" element={<CambiarContrasena />} />
+
 
         {/* Rutas protegidas */}
         <Route path="/" element={<PrivateRoute><Layout><Dashboard /></Layout></PrivateRoute>} />

@@ -1,10 +1,11 @@
 import React, { useState } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import { TextField, Button, Box, Typography, Paper, Alert, CircularProgress } from "@mui/material";
 
 const CambiarContrasena = () => {
-  const { token } = useParams(); // 🔑 Capturamos el token de la URL
+  const [searchParams] = useSearchParams();
+  const token = searchParams.get("token"); // 🔑 Extraemos el token desde la URL
   const navigate = useNavigate();
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -18,19 +19,16 @@ const CambiarContrasena = () => {
     setMensaje(null);
     setLoading(true);
 
-    // Validaciones
     if (!password || !confirmPassword) {
       setError("⚠ Todos los campos son obligatorios.");
       setLoading(false);
       return;
     }
-
     if (password !== confirmPassword) {
       setError("⚠ Las contraseñas no coinciden.");
       setLoading(false);
       return;
     }
-
     if (password.length < 6) {
       setError("⚠ La contraseña debe tener al menos 6 caracteres.");
       setLoading(false);
@@ -38,13 +36,12 @@ const CambiarContrasena = () => {
     }
 
     try {
-      // Enviar la nueva contraseña a la API
       const url = "https://back-usuarios-f.onrender.com/api/usuarios/cambiar-contrasena";
       const response = await axios.post(url, { token, password });
 
       if (response.data.success) {
         setMensaje("✅ Contraseña actualizada con éxito. Redirigiendo al login...");
-        setTimeout(() => navigate("/login"), 3000); // Redirigir al login después de 3 segundos
+        setTimeout(() => navigate("/login"), 3000);
       } else {
         setError(response.data.message || "⚠ No se pudo actualizar la contraseña.");
       }
@@ -59,7 +56,7 @@ const CambiarContrasena = () => {
     <Box sx={{ display: "flex", justifyContent: "center", alignItems: "center", height: "100vh" }}>
       <Paper sx={{ padding: 4, width: 320, textAlign: "center" }}>
         <Typography variant="h5" sx={{ marginBottom: 2, fontWeight: "bold" }}>
-          Cambiar Contraseña
+          Restablecer Contraseña
         </Typography>
         {mensaje && <Alert severity="success">{mensaje}</Alert>}
         {error && <Alert severity="error">{error}</Alert>}
