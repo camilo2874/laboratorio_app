@@ -16,6 +16,7 @@ const RegistroUsuario = () => {
     password: "",
     especialidad: "",
     codigoSeguridad: "",
+    razonSocial: ""  // Campo para clientes
   });
 
   const [cargando, setCargando] = useState(false);
@@ -46,7 +47,7 @@ const RegistroUsuario = () => {
       return;
     }
 
-    // Validación de campos obligatorios
+    // Validación de campos obligatorios; para clientes, también se requiere "razonSocial"
     if (
       !usuario.tipo ||
       !usuario.nombre ||
@@ -54,27 +55,37 @@ const RegistroUsuario = () => {
       !usuario.telefono ||
       !usuario.direccion ||
       !usuario.email ||
-      !usuario.password
+      !usuario.password ||
+      (usuario.tipo === "cliente" && !usuario.razonSocial)
     ) {
       setError("⚠ Todos los campos obligatorios deben completarse.");
       setCargando(false);
       return;
     }
 
+    // Preparar los datos de registro
+    // Si el usuario es de tipo "cliente", se anidan los detalles en un objeto "detalles"
+    let datosRegistro = { ...usuario };
+    if (usuario.tipo === "cliente") {
+      datosRegistro.detalles = {
+        tipo: "cliente",           // Se especifica el tipo dentro de detalles
+        razonSocial: usuario.razonSocial
+      };
+      // Opcional: elimina "razonSocial" de la raíz para evitar duplicados
+      delete datosRegistro.razonSocial;
+    }
+    console.log("Datos que se envían al backend:", datosRegistro);
+
+
     try {
-      console.log("📩 Enviando datos a la API:", JSON.stringify(usuario, null, 2));
-
-      const respuesta = await axios.post(
-        "https://unificado-u.onrender.com/api/usuarios/registro",
-        usuario,
-        {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
-
+      console.log("📩 Enviando datos a la API:", JSON.stringify(datosRegistro, null, 2));
+      const url = `${import.meta.env.VITE_BACKEND_URL}/api/usuarios/registro`;
+      const respuesta = await axios.post(url, datosRegistro, {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
       console.log("✔ Registro exitoso:", respuesta.data);
       setMensaje("✔ Usuario registrado correctamente.");
       setUsuario({
@@ -87,12 +98,11 @@ const RegistroUsuario = () => {
         password: "",
         especialidad: "",
         codigoSeguridad: "",
+        razonSocial: ""
       });
-
-      setTimeout(() => navigate("/users"), 2000);
+      setTimeout(() => navigate("/users"), 2000); // Redirige a la lista de usuarios después de 2 segundos
     } catch (error) {
       console.error("❌ Error en la solicitud:", error.response ? error.response.data : error.message);
-
       if (error.response) {
         setError(
           error.response.data.mensaje ||
@@ -117,7 +127,6 @@ const RegistroUsuario = () => {
       {error && <Alert severity="error" sx={{ marginBottom: 2 }}>{error}</Alert>}
 
       <form onSubmit={registrarUsuario}>
-        {/* Tipo de usuario */}
         <Select
           value={usuario.tipo}
           name="tipo"
@@ -209,6 +218,18 @@ const RegistroUsuario = () => {
             value={usuario.codigoSeguridad}
             onChange={manejarCambio}
             fullWidth
+            sx={{ marginBottom: 2 }}
+          />
+        )}
+        {/* Campo condicional para tipo "cliente": Razón Social */}
+        {usuario.tipo === "cliente" && (
+          <TextField
+            label="Razón Social"
+            name="razonSocial"
+            value={usuario.razonSocial}
+            onChange={manejarCambio}
+            fullWidth
+            required
             sx={{ marginBottom: 2 }}
           />
         )}

@@ -33,10 +33,11 @@ const Muestras = () => {
     top: '50%',
     left: '50%',
     transform: 'translate(-50%, -50%)',
-    width: 400,
+    width: 500,
     bgcolor: 'background.paper',
     boxShadow: 24,
     p: 4,
+    borderRadius: 2,
   };
 
   // 📌 Cargar muestras y asociar con clientes
@@ -52,7 +53,7 @@ const Muestras = () => {
           return;
         }
 
-        const usuariosResponse = await axios.get("https://unificado-u.onrender.com/api/usuarios", {
+        const usuariosResponse = await axios.get("https://back-usuarios-f.onrender.com/api/usuarios", {
           headers: { Authorization: `Bearer ${token}` }
         });
 
@@ -115,7 +116,7 @@ const Muestras = () => {
     // Encabezado con colores institucionales
     doc.setFontSize(18);
     doc.setTextColor(255, 255, 255);
-    doc.setFillColor(0, 49, 77); // Verde SENA
+    doc.setFillColor(0, 49, 77); // Color institucional
     doc.rect(0, 35, 210, 10, "F");
     doc.text("Detalles de la Muestra", 14, 42);
 
@@ -177,9 +178,11 @@ const Muestras = () => {
 
   return (
     <Paper sx={{ padding: 2, marginTop: 2, boxShadow: 3 }}>
-      <h2 style={{ textAlign: "center", marginBottom: "20px", fontWeight: "bold" }}>🔬 Muestras Registradas</h2>
+      <Typography variant="h4" align="center" sx={{ marginBottom: 2, fontWeight: 'bold' }}>
+        🔬 Muestras Registradas
+      </Typography>
 
-      {/* Filtro por tipo de muestra (Solo "Agua" y "Suelo") */}
+      {/* Filtro por tipo de muestra */}
       <Select
         value={filterType}
         onChange={handleFilterChange}
@@ -219,7 +222,11 @@ const Muestras = () => {
               <TableRow 
                 key={muestra.id_muestra} 
                 onClick={() => setSelectedMuestra(muestra)}
-                style={{ cursor: 'pointer' }}
+                sx={{
+                  transition: "transform 0.2s",
+                  "&:hover": { transform: "scale(1.02)" },
+                  cursor: "pointer"
+                }}
               >
                 <TableCell>{muestra.id_muestra || "N/A"}</TableCell>
                 <TableCell>{muestra.nombreCliente || "No encontrado"}</TableCell>
@@ -269,18 +276,40 @@ const Muestras = () => {
         onClose={() => setSelectedMuestra(null)}
       >
         <Box sx={modalStyle}>
-          <Typography variant="h6" component="h2">
+          <Typography variant="h6" align="center" sx={{ mb: 2 }}>
             Detalles de la Muestra
           </Typography>
           {selectedMuestra && (
-            <>
-              <Typography>ID: {selectedMuestra.id_muestra}</Typography>
-              <Typography>Cliente: {selectedMuestra.nombreCliente}</Typography>
-              <Typography>Teléfono: {selectedMuestra.telefono}</Typography>
-              <Typography>Tipo: {selectedMuestra.tipoMuestreo}</Typography>
-              <Typography>Fecha: {new Date(selectedMuestra.fechaHora).toLocaleDateString()}</Typography>
-              <Typography>Análisis: {selectedMuestra.analisisSeleccionados?.join(", ") || "Ninguno"}</Typography>
-            </>
+            <TableContainer component={Paper} sx={{ maxWidth: '100%' }}>
+              <Table>
+                <TableBody>
+                  <TableRow>
+                    <TableCell sx={{ fontWeight: 'bold' }}>ID</TableCell>
+                    <TableCell>{selectedMuestra.id_muestra || "N/A"}</TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell sx={{ fontWeight: 'bold' }}>Cliente</TableCell>
+                    <TableCell>{selectedMuestra.nombreCliente || "No encontrado"}</TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell sx={{ fontWeight: 'bold' }}>Teléfono</TableCell>
+                    <TableCell>{selectedMuestra.telefono || "No encontrado"}</TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell sx={{ fontWeight: 'bold' }}>Tipo</TableCell>
+                    <TableCell>{selectedMuestra.tipoMuestreo || "N/A"}</TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell sx={{ fontWeight: 'bold' }}>Fecha</TableCell>
+                    <TableCell>{selectedMuestra.fechaHora ? new Date(selectedMuestra.fechaHora).toLocaleDateString() : "N/A"}</TableCell>
+                  </TableRow>
+                  <TableRow>
+                    <TableCell sx={{ fontWeight: 'bold' }}>Análisis</TableCell>
+                    <TableCell>{selectedMuestra.analisisSeleccionados?.join(", ") || "Ninguno"}</TableCell>
+                  </TableRow>
+                </TableBody>
+              </Table>
+            </TableContainer>
           )}
         </Box>
       </Modal>
@@ -291,54 +320,70 @@ const Muestras = () => {
         onClose={() => setEditingMuestra(null)}
       >
         <Box sx={modalStyle}>
-          <Typography variant="h6" component="h2">
+          <Typography variant="h6" align="center" sx={{ mb: 2 }}>
             Editar Muestra
           </Typography>
           {editingMuestra && (
-            <>
-              <TextField
-                fullWidth
-                label="Tipo de Muestreo"
-                value={editingMuestra.tipoMuestreo}
-                onChange={(e) => setEditingMuestra({ ...editingMuestra, tipoMuestreo: e.target.value })}
-                sx={{ marginBottom: 2 }}
-              />
-              <TextField
-                fullWidth
-                label="Fecha y Hora"
-                type="datetime-local"
-                value={editingMuestra.fechaHora}
-                onChange={(e) => setEditingMuestra({ ...editingMuestra, fechaHora: e.target.value })}
-                sx={{ marginBottom: 2 }}
-              />
-              <Typography variant="body1">Análisis a realizar:</Typography>
-              {[
-                "PH",
-                "Conductividad",
-                "Turbiedad",
-                "Cloro Residual",
-                "Metales Pesados",
-              ].map((analisis) => (
-                <FormControlLabel
-                  key={analisis}
-                  control={
-                    <Checkbox
-                      value={analisis}
-                      checked={editingMuestra.analisisSeleccionados?.includes(analisis)}
-                      onChange={(e) => {
-                        const { value, checked } = e.target;
-                        setEditingMuestra((prev) => ({
-                          ...prev,
-                          analisisSeleccionados: checked
-                            ? [...prev.analisisSeleccionados, value]
-                            : prev.analisisSeleccionados.filter((item) => item !== value),
-                        }));
-                      }}
-                    />
-                  }
-                  label={analisis}
-                />
-              ))}
+            <Box component="form" noValidate autoComplete="off">
+              <TableContainer>
+                <Table>
+                  <TableBody>
+                    <TableRow>
+                      <TableCell sx={{ fontWeight: 'bold' }}>Tipo de Muestreo</TableCell>
+                      <TableCell>
+                        <TextField
+                          fullWidth
+                          value={editingMuestra.tipoMuestreo}
+                          onChange={(e) => setEditingMuestra({ ...editingMuestra, tipoMuestreo: e.target.value })}
+                        />
+                      </TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell sx={{ fontWeight: 'bold' }}>Fecha y Hora</TableCell>
+                      <TableCell>
+                        <TextField
+                          fullWidth
+                          type="datetime-local"
+                          value={editingMuestra.fechaHora}
+                          onChange={(e) => setEditingMuestra({ ...editingMuestra, fechaHora: e.target.value })}
+                        />
+                      </TableCell>
+                    </TableRow>
+                    <TableRow>
+                      <TableCell sx={{ fontWeight: 'bold', verticalAlign: 'top' }}>Análisis a realizar</TableCell>
+                      <TableCell>
+                        {[
+                          "PH",
+                          "Conductividad",
+                          "Turbiedad",
+                          "Cloro Residual",
+                          "Metales Pesados",
+                        ].map((analisis) => (
+                          <FormControlLabel
+                            key={analisis}
+                            control={
+                              <Checkbox
+                                value={analisis}
+                                checked={editingMuestra.analisisSeleccionados?.includes(analisis)}
+                                onChange={(e) => {
+                                  const { value, checked } = e.target;
+                                  setEditingMuestra((prev) => ({
+                                    ...prev,
+                                    analisisSeleccionados: checked
+                                      ? [...prev.analisisSeleccionados, value]
+                                      : prev.analisisSeleccionados.filter((item) => item !== value),
+                                  }));
+                                }}
+                              />
+                            }
+                            label={analisis}
+                          />
+                        ))}
+                      </TableCell>
+                    </TableRow>
+                  </TableBody>
+                </Table>
+              </TableContainer>
               <Button 
                 variant="contained" 
                 color="primary" 
@@ -348,7 +393,7 @@ const Muestras = () => {
               >
                 Guardar Cambios
               </Button>
-            </>
+            </Box>
           )}
         </Box>
       </Modal>
