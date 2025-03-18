@@ -68,7 +68,7 @@ const UsersList = () => {
 
     if (filterType !== "todos") {
       filtered = filtered.filter(user =>
-        user.rol?.nombre && user.rol.nombre.trim().toLowerCase() === filterType.toLowerCase()
+        user.rol?.name && user.rol.name.trim().toLowerCase() === filterType.toLowerCase()
       );
     }
 
@@ -148,7 +148,6 @@ const UsersList = () => {
     }
   };
   
-
   // 📌 Eliminar usuario
   const handleDelete = async (id) => {
     const token = localStorage.getItem("token");
@@ -272,7 +271,7 @@ const UsersList = () => {
                 <TableCell>{user.telefono}</TableCell>
                 <TableCell>{user.direccion}</TableCell>
                 <TableCell>{user.email}</TableCell>
-                <TableCell>{user.rol?.nombre}</TableCell>
+                <TableCell>{user.rol?.name}</TableCell>
                 <TableCell>
                   <Switch
                     checked={user.activo}
@@ -331,8 +330,8 @@ const UsersList = () => {
 
           {/* Campo para cambiar el tipo de usuario */}
           <Select
-            value={editUser?.rol?.nombre || ""}
-            onChange={(e) => setEditUser({ ...editUser, rol: { ...editUser.rol, nombre: e.target.value } })}
+            value={editUser?.rol?.name || ""}
+            onChange={(e) => setEditUser({ ...editUser, rol: { ...editUser.rol, name: e.target.value } })}
             fullWidth
             margin="dense"
             sx={{ marginTop: 2 }}
@@ -371,7 +370,7 @@ const UsersList = () => {
                 <Typography variant="body1"><strong>Email:</strong> {detailUser?.email}</Typography>
               </Grid>
               <Grid item xs={6}>
-                <Typography variant="body1"><strong>Rol:</strong> {detailUser?.rol?.nombre}</Typography>
+                <Typography variant="body1"><strong>Rol:</strong> {detailUser?.rol?.name}</Typography>
               </Grid>
               <Grid item xs={6}>
                 <Typography variant="body1"><strong>Activo:</strong> {detailUser?.activo ? "Sí" : "No"}</Typography>

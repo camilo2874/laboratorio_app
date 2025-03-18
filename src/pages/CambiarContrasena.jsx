@@ -5,7 +5,7 @@ import { TextField, Button, Box, Typography, Paper, Alert, CircularProgress } fr
 
 const CambiarContrasena = () => {
   const [searchParams] = useSearchParams();
-  const token = searchParams.get("token"); // 🔑 Extraemos el token desde la URL
+  const token = searchParams.get("token"); 
   const navigate = useNavigate();
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
