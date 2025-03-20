@@ -20,14 +20,69 @@ const AppRouter = () => {
         <Route path="/recuperar-contrasena" element={<RecuperarContrasena />} />
         <Route path="/restablecer-password" element={<CambiarContrasena />} />
 
-
         {/* Rutas protegidas */}
-        <Route path="/" element={<PrivateRoute><Layout><Dashboard /></Layout></PrivateRoute>} />
-        <Route path="/dashboard" element={<PrivateRoute><Layout><Dashboard /></Layout></PrivateRoute>} /> {/* ✅ Asegura que /dashboard funcione */}
-        <Route path="/users" element={<PrivateRoute><Layout><Users /></Layout></PrivateRoute>} />
-        <Route path="/samples" element={<PrivateRoute><Layout><Samples /></Layout></PrivateRoute>} />
-        <Route path="/muestras" element={<PrivateRoute><Layout><Muestras /></Layout></PrivateRoute>} />
-        <Route path="/registro-muestras" element={<PrivateRoute><Layout><RegistroMuestras /></Layout></PrivateRoute>} />
+        <Route
+          path="/"
+          element={
+            <PrivateRoute>
+              <Layout>
+                <Dashboard />
+              </Layout>
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/dashboard"
+          element={
+            <PrivateRoute>
+              <Layout>
+                <Dashboard />
+              </Layout>
+            </PrivateRoute>
+          }
+        />
+        {/* Ruta de usuarios: solo administradores y super administradores */}
+        <Route
+          path="/users"
+          element={
+            <PrivateRoute allowedRoles={["administrador", "super_admin"]}>
+              <Layout>
+                <Users />
+              </Layout>
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/samples"
+          element={
+            <PrivateRoute>
+              <Layout>
+                <Samples />
+              </Layout>
+            </PrivateRoute>
+          }
+        />
+        <Route
+          path="/muestras"
+          element={
+            <PrivateRoute>
+              <Layout>
+                <Muestras />
+              </Layout>
+            </PrivateRoute>
+          }
+        />
+        {/* Ruta de registro de muestras: restringida a ciertos roles */}
+        <Route
+          path="/registro-muestras"
+          element={
+            <PrivateRoute allowedRoles={["administrador", "super_admin"]}>
+              <Layout>
+                <RegistroMuestras />
+              </Layout>
+            </PrivateRoute>
+          }
+        />
       </Routes>
     </Router>
   );

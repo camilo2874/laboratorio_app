@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react"; 
+// src/modules/usuarios/UsersList.jsx
+import React, { useState, useEffect, useContext } from "react";
 import axios from "axios";
 import {
   Table, TableBody, TableCell, TableContainer, TableHead, TableRow, Paper, 
@@ -8,8 +9,10 @@ import {
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 import { useNavigate } from "react-router-dom";
+import AuthContext from "../../context/AuthContext"; // Asegúrate de que la ruta sea correcta
 
 const UsersList = () => {
+  const { tipoUsuario } = useContext(AuthContext);
   const [users, setUsers] = useState([]);
   const [filteredUsers, setFilteredUsers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -22,34 +25,31 @@ const UsersList = () => {
   const [openEdit, setOpenEdit] = useState(false);
   const navigate = useNavigate();
 
-  // Nuevos estados para el detalle del usuario
+  // Estados para el detalle del usuario
   const [detailUser, setDetailUser] = useState(null);
   const [openDetail, setOpenDetail] = useState(false);
 
-  // 📌 Cargar usuarios desde la API
+  // Cargar usuarios desde la API
   useEffect(() => {
     const fetchUsers = async () => {
       const token = localStorage.getItem("token");
-
       if (!token) {
         setError("No tienes permiso para acceder a esta información. Inicia sesión.");
         navigate("/login");
         return;
       }
-
       try {
         const response = await axios.get("https://back-usuarios-f.onrender.com/api/usuarios", {
           headers: {
             Authorization: `Bearer ${token}`,
           },
         });
-
         setUsers(response.data);
         setFilteredUsers(response.data);
       } catch (error) {
         if (error.response && error.response.status === 401) {
-          localStorage.removeItem("token"); // Elimina el token expirado
-          navigate("/login"); // Redirige al usuario a la página de login
+          localStorage.removeItem("token");
+          navigate("/login");
         } else {
           setError("Error al cargar los usuarios.");
           console.error("❌ Error en la solicitud:", error);
@@ -58,32 +58,28 @@ const UsersList = () => {
         setLoading(false);
       }
     };
-
     fetchUsers();
   }, [navigate]);
 
-  // 📌 Aplicar filtro por tipo de usuario y búsqueda
+  // Aplicar filtro por tipo de usuario y búsqueda
   useEffect(() => {
     let filtered = [...users];
-
     if (filterType !== "todos") {
       filtered = filtered.filter(user =>
         user.rol?.name && user.rol.name.trim().toLowerCase() === filterType.toLowerCase()
       );
     }
-
     if (search.trim() !== "") {
       filtered = filtered.filter(user =>
         user.nombre?.toLowerCase().includes(search.toLowerCase()) ||
         (user.documento && user.documento.toString().includes(search))
       );
     }
-
     setFilteredUsers(filtered);
     setPage(0);
   }, [search, filterType, users]);
 
-  // 📌 Manejo de eventos
+  // Eventos de manejo
   const handleSearchChange = (e) => setSearch(e.target.value);
   const handleFilterChange = (e) => setFilterType(e.target.value);
   const handleChangePage = (event, newPage) => setPage(newPage);
@@ -92,28 +88,25 @@ const UsersList = () => {
     setPage(0);
   };
 
-  // 📌 Abrir modal de edición
+  // Abrir modal de edición
   const handleEditClick = (user) => {
     setEditUser(user);
     setOpenEdit(true);
   };
 
-  // 📌 Cerrar modal de edición
+  // Cerrar modal de edición
   const handleCloseEdit = () => {
     setOpenEdit(false);
     setEditUser(null);
   };
 
-  // 📌 Guardar cambios de edición
+  // Guardar cambios de edición
   const handleEditSubmit = async () => {
     const token = localStorage.getItem("token");
-  
     if (!editUser || !editUser._id) {
       alert("No se encontró el usuario a editar.");
       return;
     }
-  
-    // Actualizamos solo los campos editables, omitiendo el campo "rol"
     const datosActualizados = {
       nombre: editUser.nombre,
       documento: editUser.documento,
@@ -121,11 +114,8 @@ const UsersList = () => {
       direccion: editUser.direccion,
       email: editUser.email
     };
-  
-    console.log("📩 Datos enviados:", JSON.stringify(datosActualizados, null, 2));
-  
     try {
-      const response = await axios.put(
+      await axios.put(
         `https://back-usuarios-f.onrender.com/api/usuarios/${editUser._id}`,
         datosActualizados,
         {
@@ -135,30 +125,23 @@ const UsersList = () => {
           },
         }
       );
-  
-      console.log("✔ Usuario actualizado:", response.data);
-  
       setUsers(users.map(user => (user._id === editUser._id ? { ...user, ...datosActualizados } : user)));
       setFilteredUsers(filteredUsers.map(user => (user._id === editUser._id ? { ...user, ...datosActualizados } : user)));
-  
       handleCloseEdit();
     } catch (error) {
       console.error("❌ Error al actualizar usuario:", error);
       alert(error.response?.data?.message || "Error al actualizar usuario.");
     }
   };
-  
-  // 📌 Eliminar usuario
+
+  // Eliminar usuario (si es necesario)
   const handleDelete = async (id) => {
     const token = localStorage.getItem("token");
-
     if (!window.confirm("¿Estás seguro de eliminar este usuario?")) return;
-
     try {
       await axios.delete(`https://back-usuarios-f.onrender.com/api/usuarios/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-
       setUsers(users.filter(user => user._id !== id));
       setFilteredUsers(filteredUsers.filter(user => user._id !== id));
       alert("Usuario eliminado con éxito.");
@@ -168,14 +151,11 @@ const UsersList = () => {
     }
   };
 
-  // 📌 Activar/desactivar usuario
+  // Activar/desactivar usuario (solo super_admin puede hacerlo)
   const handleToggleActivo = async (userId, nuevoEstado) => {
-    console.log("handleToggleActivo - userId:", userId, "nuevoEstado:", nuevoEstado);
     const token = localStorage.getItem("token");
-
     try {
-      // Corregido: se usa /desactivar en lugar de /activo
-      const response = await axios.put(
+      await axios.put(
         `https://back-usuarios-f.onrender.com/api/usuarios/${userId}/estado`,
         { activo: nuevoEstado },
         {
@@ -185,16 +165,12 @@ const UsersList = () => {
           },
         }
       );
-
-      console.log("✔ Estado actualizado:", response.data);
-
       setUsers(users.map(user => 
         user._id === userId ? { ...user, activo: nuevoEstado } : user
       ));
       setFilteredUsers(filteredUsers.map(user => 
         user._id === userId ? { ...user, activo: nuevoEstado } : user
       ));
-
       alert(`Usuario ${nuevoEstado ? "activado" : "desactivado"} con éxito.`);
     } catch (error) {
       console.error("❌ Error al actualizar el estado:", error);
@@ -202,7 +178,7 @@ const UsersList = () => {
     }
   };
 
-  // 📌 Manejo de detalle del usuario
+  // Manejo de detalle del usuario
   const handleRowClick = (user) => {
     setDetailUser(user);
     setOpenDetail(true);
@@ -272,29 +248,44 @@ const UsersList = () => {
                 <TableCell>{user.direccion}</TableCell>
                 <TableCell>{user.email}</TableCell>
                 <TableCell>{user.rol?.name}</TableCell>
+                <TableCell>{user.activo ? "Sí" : "No"}</TableCell>
                 <TableCell>
-                  <Switch
-                    checked={user.activo}
-                    onChange={() => handleToggleActivo(user._id, !user.activo)}
-                    color="primary"
-                    onClick={(e) => e.stopPropagation()}
-                  />
-                </TableCell>
-                <TableCell>
-                  <IconButton
-                    color="primary"
-                    onClick={(e) => { e.stopPropagation(); handleEditClick(user); }}
-                    aria-label="editar"
-                  >
-                    <EditIcon />
-                  </IconButton>
-                  <IconButton
-                    color="error"
-                    onClick={(e) => { e.stopPropagation(); handleDelete(user._id); }}
-                    aria-label="eliminar"
-                  >
-                    <DeleteIcon />
-                  </IconButton>
+                  {tipoUsuario === "super_admin" ? (
+                    <>
+                      {/* Super admin puede activar/desactivar */}
+                      <Switch
+                        checked={user.activo}
+                        onChange={() => handleToggleActivo(user._id, !user.activo)}
+                        color="primary"
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                      {/* Solo puede editar si el usuario listado es de rol "administrador" */}
+                      {user.rol?.name && user.rol.name.toLowerCase() === "administrador" && (
+                        <IconButton
+                          color="primary"
+                          onClick={(e) => { e.stopPropagation(); handleEditClick(user); }}
+                          aria-label="editar"
+                        >
+                          <EditIcon />
+                        </IconButton>
+                      )}
+                    </>
+                  ) : tipoUsuario === "administrador" ? (
+                    // Administrador puede editar usuarios que NO sean "administrador" ni "super_admin"
+                    user.rol?.name &&
+                    user.rol.name.toLowerCase() !== "administrador" &&
+                    user.rol.name.toLowerCase() !== "super_admin" && (
+                      <IconButton
+                        color="primary"
+                        onClick={(e) => { e.stopPropagation(); handleEditClick(user); }}
+                        aria-label="editar"
+                      >
+                        <EditIcon />
+                      </IconButton>
+                    )
+                  ) : (
+                    <span></span>
+                  )}
                 </TableCell>
               </TableRow>
             ))}
@@ -328,19 +319,30 @@ const UsersList = () => {
             />
           ))}
 
-          {/* Campo para cambiar el tipo de usuario */}
-          <Select
-            value={editUser?.rol?.name || ""}
-            onChange={(e) => setEditUser({ ...editUser, rol: { ...editUser.rol, name: e.target.value } })}
-            fullWidth
-            margin="dense"
-            sx={{ marginTop: 2 }}
-          >
-            <MenuItem value="cliente">Cliente</MenuItem>
-            <MenuItem value="laboratorista">Laboratorista</MenuItem>
-            <MenuItem value="administrador">Administrador</MenuItem>
-            <MenuItem value="super_admin">Super Administrador</MenuItem>
-          </Select>
+          {/* Selector de rol según el rol del usuario logueado */}
+          {tipoUsuario === "super_admin" ? (
+            <Select
+              value={editUser?.rol?.name || ""}
+              onChange={(e) => setEditUser({ ...editUser, rol: { ...editUser.rol, name: e.target.value } })}
+              fullWidth
+              margin="dense"
+              sx={{ marginTop: 2 }}
+            >
+              <MenuItem value="administrador">Administrador</MenuItem>
+            </Select>
+          ) : tipoUsuario === "administrador" ? (
+            <Select
+              value={editUser?.rol?.name || ""}
+              onChange={(e) => setEditUser({ ...editUser, rol: { ...editUser.rol, name: e.target.value } })}
+              fullWidth
+              margin="dense"
+              sx={{ marginTop: 2 }}
+            >
+              {/* Administrador no puede cambiar el rol a "administrador" ni "super_admin" */}
+              <MenuItem value="cliente">Cliente</MenuItem>
+              <MenuItem value="laboratorista">Laboratorista</MenuItem>
+            </Select>
+          ) : null}
         </DialogContent>
         <DialogActions>
           <Button onClick={handleCloseEdit}>Cancelar</Button>

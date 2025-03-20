@@ -1,11 +1,16 @@
-import React, { useState } from "react";
+// src/modules/usuarios/RegistroUsuario.jsx
+import React, { useState, useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Paper, TextField, Button, Alert, CircularProgress, Typography, Select, MenuItem
 } from "@mui/material";
 import axios from "axios";
+import AuthContext from "../../context/AuthContext"; // Ajusta la ruta si es necesario
 
 const RegistroUsuario = () => {
+  const { tipoUsuario } = useContext(AuthContext);
+  const navigate = useNavigate();
+
   const [usuario, setUsuario] = useState({
     tipo: "",
     nombre: "",
@@ -16,13 +21,23 @@ const RegistroUsuario = () => {
     password: "",
     especialidad: "",
     codigoSeguridad: "",
-    razonSocial: ""  // Campo para clientes
+    razonSocial: ""
   });
 
   const [cargando, setCargando] = useState(false);
   const [mensaje, setMensaje] = useState(null);
   const [error, setError] = useState(null);
-  const navigate = useNavigate();
+
+  // Definir las opciones de rol según el rol del usuario logueado
+  let allowedOptions = [];
+  if (tipoUsuario === "super_admin") {
+    allowedOptions = [{ value: "administrador", label: "Administrador" }];
+  } else if (tipoUsuario === "administrador") {
+    allowedOptions = [
+      { value: "cliente", label: "Cliente" },
+      { value: "laboratorista", label: "Laboratorista" }
+    ];
+  }
 
   // Manejar cambios en los campos del formulario
   const manejarCambio = (e) => {
@@ -31,7 +46,7 @@ const RegistroUsuario = () => {
     setError(null); // Resetear error al cambiar datos
   };
 
-  // Enviar datos a la API
+  // Enviar datos a la API con validaciones
   const registrarUsuario = async (e) => {
     e.preventDefault();
     setCargando(true);
@@ -40,14 +55,13 @@ const RegistroUsuario = () => {
 
     // Verificar si el token existe ANTES de enviar la solicitud
     const token = localStorage.getItem("token");
-
     if (!token) {
       setError("⚠ No tienes permiso para registrar usuarios. Inicia sesión.");
       setCargando(false);
       return;
     }
 
-    // Validación de campos obligatorios; para clientes, también se requiere "razonSocial"
+    // Validación de campos obligatorios
     if (
       !usuario.tipo ||
       !usuario.nombre ||
@@ -63,19 +77,54 @@ const RegistroUsuario = () => {
       return;
     }
 
+    // Validación: Documento solo números
+    if (!/^\d+$/.test(usuario.documento)) {
+      setError("⚠ El documento debe contener solo números.");
+      setCargando(false);
+      return;
+    }
+
+    // Validación: Teléfono solo números y exactamente 10 dígitos
+    if (!/^\d{10}$/.test(usuario.telefono)) {
+      setError("⚠ El teléfono debe contener exactamente 10 dígitos numéricos.");
+      setCargando(false);
+      return;
+    }
+
+    // Validación: Correo electrónico
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(usuario.email)) {
+      setError("⚠ El correo electrónico no tiene un formato válido.");
+      setCargando(false);
+      return;
+    }
+
+    // Validación: Contraseña mínimo 8 caracteres, al menos una mayúscula y un número
+    if (usuario.password.length < 8) {
+      setError("⚠ La contraseña debe tener al menos 8 caracteres.");
+      setCargando(false);
+      return;
+    }
+    if (!/[A-Z]/.test(usuario.password)) {
+      setError("⚠ La contraseña debe incluir al menos una letra mayúscula.");
+      setCargando(false);
+      return;
+    }
+    if (!/\d/.test(usuario.password)) {
+      setError("⚠ La contraseña debe incluir al menos un número.");
+      setCargando(false);
+      return;
+    }
+
     // Preparar los datos de registro
-    // Si el usuario es de tipo "cliente", se anidan los detalles en un objeto "detalles"
     let datosRegistro = { ...usuario };
     if (usuario.tipo === "cliente") {
       datosRegistro.detalles = {
-        tipo: "cliente",           // Se especifica el tipo dentro de detalles
+        tipo: "cliente",
         razonSocial: usuario.razonSocial
       };
-      // Opcional: elimina "razonSocial" de la raíz para evitar duplicados
       delete datosRegistro.razonSocial;
     }
     console.log("Datos que se envían al backend:", datosRegistro);
-
 
     try {
       console.log("📩 Enviando datos a la API:", JSON.stringify(datosRegistro, null, 2));
@@ -100,7 +149,7 @@ const RegistroUsuario = () => {
         codigoSeguridad: "",
         razonSocial: ""
       });
-      setTimeout(() => navigate("/users"), 2000); // Redirige a la lista de usuarios después de 2 segundos
+      setTimeout(() => navigate("/users"), 2000);
     } catch (error) {
       console.error("❌ Error en la solicitud:", error.response ? error.response.data : error.message);
       if (error.response) {
@@ -136,11 +185,14 @@ const RegistroUsuario = () => {
           required
           sx={{ marginBottom: 2 }}
         >
-          <MenuItem value="" disabled>Selecciona un tipo de usuario</MenuItem>
-          <MenuItem value="cliente">Cliente</MenuItem>
-          <MenuItem value="laboratorista">Laboratorista</MenuItem>
-          <MenuItem value="administrador">Administrador</MenuItem>
-          <MenuItem value="super_admin">Super Administrador</MenuItem>
+          <MenuItem value="" disabled>
+            Selecciona un tipo de usuario
+          </MenuItem>
+          {allowedOptions.map((option) => (
+            <MenuItem key={option.value} value={option.value}>
+              {option.label}
+            </MenuItem>
+          ))}
         </Select>
 
         <TextField
@@ -221,7 +273,6 @@ const RegistroUsuario = () => {
             sx={{ marginBottom: 2 }}
           />
         )}
-        {/* Campo condicional para tipo "cliente": Razón Social */}
         {usuario.tipo === "cliente" && (
           <TextField
             label="Razón Social"

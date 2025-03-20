@@ -20,7 +20,6 @@ const Login = () => {
     setError(null);
     setLoading(true);
 
-    // Validación básica en el frontend
     if (!credentials.email || !credentials.password) {
       setError("⚠ Todos los campos son obligatorios.");
       setLoading(false);
@@ -35,12 +34,29 @@ const Login = () => {
     try {
       const url = `${import.meta.env.VITE_BACKEND_URL}/api/usuarios/login`;
       const response = await axios.post(url, credentials);
+
       if (response.data && response.data.token) {
         console.log("🔑 Token recibido:", response.data.token);
         localStorage.setItem("token", response.data.token);
-        // Actualizamos el contexto con toda la información del usuario, incluyendo el token
-        login({ email: credentials.email, token: response.data.token, ...response.data.usuario });
-        navigate("/dashboard"); // Redirigir al Dashboard
+
+        const usuario = response.data.usuario;
+        
+        // Aseguramos que tipoUsuario se almacene correctamente
+        const tipoUsuario = usuario.rol ? usuario.rol : "desconocido"; 
+
+        const usuarioFinal = {
+          email: credentials.email,
+          token: response.data.token,
+          tipoUsuario, // Ahora sí se guarda correctamente
+          ...usuario,
+        };
+
+        console.log("👤 Usuario autenticado:", usuarioFinal);
+
+        login(usuarioFinal);
+        localStorage.setItem("user", JSON.stringify(usuarioFinal));
+
+        navigate("/dashboard");
       } else {
         setError("Error: No se recibió un token válido.");
       }
@@ -73,7 +89,6 @@ const Login = () => {
             </Button>
           )}
         </Box>
-        {/* Enlace para recuperar contraseña */}
         <Typography variant="body2" sx={{ marginTop: 2 }}>
           <a href="/recuperar-contrasena" style={{ color: "#39A900", textDecoration: "none" }}>
             ¿Olvidaste tu contraseña?
