@@ -23,32 +23,34 @@ import {
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 
 const RegistroMuestras = () => {
-  // Estado del formulario para registrar la MUESTRA
+  const navigate = useNavigate();
+
+  // Estado del formulario de registro
   const [formData, setFormData] = useState({
     tipoMuestra: "",
     tipoMuestreo: "",
+    // Estos campos de agua solo se usarán si el tipo de muestra es "Agua"
     tipoAgua: "",
-    otroTipoAgua: "",
+    descripcion: "",
+    tipoPersonalizado: "",
     documento: "",
     fechaHora: "",
     analisisSeleccionados: [],
     tipoMuestreoOtro: "",
   });
 
-  // Estado para usuario validado
+  // Estados para usuario validado
   const [clienteEncontrado, setClienteEncontrado] = useState(null);
   const [validatingUser, setValidatingUser] = useState(false);
   const [userValidationError, setUserValidationError] = useState(null);
 
-  // Otros estados para manejo de errores, carga y éxito
+  // Estados para mensajes de error, éxito y carga
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   const [loading, setLoading] = useState(false);
 
-  // Estado para el modal de registro de CLIENTE
+  // Estados para el modal de registro de cliente
   const [openModal, setOpenModal] = useState(false);
-
-  // Aquí renombramos "nombreCompleto" a "nombre" para que coincida con lo que exige el backend
   const [clienteData, setClienteData] = useState({
     nombre: "",
     documento: "",
@@ -58,37 +60,62 @@ const RegistroMuestras = () => {
     password: "",
     razonSocial: "",
   });
-
-  // Estados para el registro de cliente (errores, éxito y carga)
   const [registroError, setRegistroError] = useState(null);
   const [registroExito, setRegistroExito] = useState(null);
   const [registrando, setRegistrando] = useState(false);
-
-  const navigate = useNavigate();
 
   // Listas de análisis
   const analisisAgua = [
     {
       categoria: "Metales",
       analisis: [
-        "Aluminio", "Arsénico", "Cadmio", "Cobre", "Cromo", "Hierro",
-        "Manganeso", "Mercurio", "Molibdeno", "Níquel", "Plata", "Plomo", "Zinc"
+        "Aluminio",
+        "Arsénico",
+        "Cadmio",
+        "Cobre",
+        "Cromo",
+        "Hierro",
+        "Manganeso",
+        "Mercurio",
+        "Molibdeno",
+        "Níquel",
+        "Plata",
+        "Plomo",
+        "Zinc",
       ],
     },
     {
       categoria: "Química General",
       analisis: [
-        "Carbono Orgánico Total (COT)", "Cloro residual", "Cloro Total", "Cloruros",
-        "Conductividad", "Dureza Cálcica", "Dureza Magnésica", "Dureza Total",
-        "Ortofosfatos", "Fósforo Total", "Nitratos", "Nitritos", "Nitrógeno amoniacal",
-        "Nitrógeno total", "Oxígeno disuelto", "pH", "Potasio", "Sulfatos"
+        "Carbono Orgánico Total (COT)",
+        "Cloro residual",
+        "Cloro Total",
+        "Cloruros",
+        "Conductividad",
+        "Dureza Cálcica",
+        "Dureza Magnésica",
+        "Dureza Total",
+        "Ortofosfatos",
+        "Fósforo Total",
+        "Nitratos",
+        "Nitritos",
+        "Nitrógeno amoniacal",
+        "Nitrógeno total",
+        "Oxígeno disuelto",
+        "pH",
+        "Potasio",
+        "Sulfatos",
       ],
     },
     {
       categoria: "Físicos",
       analisis: [
-        "Color aparente", "Color real", "Sólidos sedimentables", "Sólidos suspendidos",
-        "Sólidos Totales", "Turbiedad"
+        "Color aparente",
+        "Color real",
+        "Sólidos sedimentables",
+        "Sólidos suspendidos",
+        "Sólidos Totales",
+        "Turbiedad",
       ],
     },
     {
@@ -100,15 +127,16 @@ const RegistroMuestras = () => {
   const analisisSuelo = [
     {
       categoria: "Propiedades Físicas",
-      analisis: [
-        "pH", "Conductividad Eléctrica", "Humedad", "Sólidos Totales"
-      ],
+      analisis: ["pH", "Conductividad Eléctrica", "Humedad", "Sólidos Totales"],
     },
     {
       categoria: "Propiedades Químicas",
       analisis: [
-        "Carbono orgánico", "Materia orgánica", "Fósforo total",
-        "Acidez intercambiable", "Bases intercambiables"
+        "Carbono orgánico",
+        "Materia orgánica",
+        "Fósforo total",
+        "Acidez intercambiable",
+        "Bases intercambiables",
       ],
     },
     {
@@ -117,13 +145,11 @@ const RegistroMuestras = () => {
     },
     {
       categoria: "Micronutrientes",
-      analisis: [
-        "Cobre", "Zinc", "Hierro", "Manganeso", "Cadmio", "Mercurio"
-      ],
+      analisis: ["Cobre", "Zinc", "Hierro", "Manganeso", "Cadmio", "Mercurio"],
     },
   ];
 
-  // Determina cuál lista de análisis mostrar
+  // Determinar qué lista de análisis mostrar según el tipo de muestra
   const analisisDisponibles =
     formData.tipoMuestra === "Suelo"
       ? analisisSuelo
@@ -131,30 +157,15 @@ const RegistroMuestras = () => {
       ? analisisAgua
       : [];
 
-  // Ejemplo de validación de cédula (opcional)
-  const validarCedula = (cedula) => {
-    if (cedula.length !== 10) return false;
-    const coeficientes = [2, 1, 2, 1, 2, 1, 2, 1, 2];
-    const verificador = parseInt(cedula[9], 10);
-    let suma = 0;
-    for (let i = 0; i < 9; i++) {
-      let valor = parseInt(cedula[i], 10) * coeficientes[i];
-      if (valor >= 10) valor -= 9;
-      suma += valor;
-    }
-    const resultado = suma % 10 === 0 ? 0 : 10 - (suma % 10);
-    return resultado === verificador;
-  };
-
   // Manejar cambios en formData
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData({ ...formData, [name]: value });
+    setFormData((prev) => ({ ...prev, [name]: value }));
     setError(null);
     setUserValidationError(null);
   };
 
-  // Manejar checkbox de análisis
+  // Manejar cambios en los checkbox de análisis
   const handleCheckboxChange = (e) => {
     const { value, checked } = e.target;
     setFormData((prev) => ({
@@ -165,7 +176,7 @@ const RegistroMuestras = () => {
     }));
   };
 
-  // Validar usuario por documento
+  // Validar usuario a través del documento
   const handleValidateUser = async () => {
     if (!formData.documento) {
       setUserValidationError("Por favor ingrese el número de documento.");
@@ -173,24 +184,14 @@ const RegistroMuestras = () => {
     }
     setValidatingUser(true);
     setUserValidationError(null);
-
     try {
       const token = localStorage.getItem("token");
-      console.log("Validando usuario con documento:", formData.documento);
-      console.log("Token enviado:", token);
-
-      // Uso de template literals para URL y headers
       const response = await axios.get(
         `https://back-usuarios-f.onrender.com/api/usuarios/buscar?documento=${formData.documento}`,
         {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
+          headers: { Authorization: `Bearer ${token}` },
         }
       );
-
-      console.log("Respuesta de la API:", response.data);
-
       if (response.data && response.data.documento) {
         setClienteEncontrado(response.data);
         setUserValidationError(null);
@@ -209,7 +210,7 @@ const RegistroMuestras = () => {
     setValidatingUser(false);
   };
 
-  // Envío del formulario de la MUESTRA
+  // Envío del formulario de registro de muestra
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError(null);
@@ -229,34 +230,48 @@ const RegistroMuestras = () => {
       return;
     }
 
-    // Validar "Otro" en tipo de muestreo
     if (formData.tipoMuestreo === "Otro" && !formData.tipoMuestreoOtro) {
       setError("⚠ Por favor, especifique el tipo de muestreo.");
       setLoading(false);
       return;
     }
 
-    // Validar que haya un usuario encontrado
     if (!clienteEncontrado) {
       setError("⚠ Debe validar el usuario antes de continuar.");
       setLoading(false);
       return;
     }
 
-    // Ajustar tipo de agua y muestreo si es "Otro"
-    const tipoAguaFinal =
-      formData.tipoAgua === "Otro" ? formData.otroTipoAgua : formData.tipoAgua;
+    // Si el tipo de agua es "Otra", se realiza la asignación mediante la API
+    if (formData.tipoAgua === "Otra") {
+      try {
+        const assignResponse = await axios.post(
+          "https://backend-daniel.onrender.com/api/tipos-agua/asignar/MUESTRA-H06",
+          {
+            descripcion: formData.descripcion,
+            tipoPersonalizado: formData.tipoPersonalizado,
+          }
+        );
+        console.log("Asignación de tipo de agua:", assignResponse.data);
+      } catch (assignError) {
+        console.error(
+          "Error al asignar tipo de agua:",
+          assignError.response ? assignError.response.data : assignError.message
+        );
+        // Puedes detener el proceso o continuar según tu lógica
+      }
+    }
+
     const tipoMuestreoFinal =
       formData.tipoMuestreo === "Otro" ? formData.tipoMuestreoOtro : formData.tipoMuestreo;
 
     try {
       const token = localStorage.getItem("token");
       const response = await axios.post(
-        "https://backendregistromuestra.onrender.com/muestras",
-        { 
+        "https://backendregistromuestra.onrender.com/api/muestras",
+        {
           ...formData,
-          tipoAgua: tipoAguaFinal,
-          tipoMuestreo: tipoMuestreoFinal 
+          tipoMuestreo: tipoMuestreoFinal,
         },
         {
           headers: {
@@ -278,59 +293,36 @@ const RegistroMuestras = () => {
     setLoading(false);
   };
 
-  // Manejo del modal
-  const handleOpenModal = () => {
-    setOpenModal(true);
-  };
-  const handleCloseModal = () => {
-    setOpenModal(false);
-  };
-
-  // Manejar cambios en los campos del modal (clienteData)
+  // Modal para registrar cliente
+  const handleOpenModal = () => setOpenModal(true);
+  const handleCloseModal = () => setOpenModal(false);
   const handleClienteChange = (e) => {
     const { name, value } = e.target;
-    setClienteData({ ...clienteData, [name]: value });
+    setClienteData((prev) => ({ ...prev, [name]: value }));
   };
 
-  // Registrar un nuevo cliente desde el modal
   const handleRegistrarCliente = async () => {
-    // Verifica que los campos obligatorios estén llenos
     if (!clienteData.documento || !clienteData.nombre || !clienteData.email) {
       setRegistroError("⚠ Todos los campos obligatorios deben completarse.");
       return;
     }
-
     setRegistrando(true);
     setRegistroError(null);
     setRegistroExito(null);
-
     try {
       const token = localStorage.getItem("token");
       const userData = JSON.parse(localStorage.getItem("usuario"));
       const userRole = userData?.rol?.name || "";
-
-      console.log("Usuario autenticado con rol:", userRole);
-
-      // Si tu backend exige un 'tipo' para el usuario, puedes forzarlo aquí:
-      const newClienteData = {
-        ...clienteData,
-        tipo: "cliente", // <--- si solo quieres crear clientes
-      };
-
-      // Validar si el administrador puede registrar este tipo de usuario
+      const newClienteData = { ...clienteData, tipo: "cliente" };
       if (
         userRole === "administrador" &&
         newClienteData.tipo !== "cliente" &&
         newClienteData.tipo !== "laboratorista"
       ) {
-        setRegistroError(
-          "⚠ Un administrador solo puede registrar clientes o laboratoristas."
-        );
+        setRegistroError("⚠ Un administrador solo puede registrar clientes o laboratoristas.");
         setRegistrando(false);
         return;
       }
-
-      // Enviamos "newClienteData" en lugar de "formData"
       const response = await axios.post(
         "https://back-usuarios-f.onrender.com/api/usuarios/registro",
         newClienteData,
@@ -341,11 +333,8 @@ const RegistroMuestras = () => {
           },
         }
       );
-
       console.log("Cliente registrado con éxito:", response.data);
       setRegistroExito("✔ Cliente registrado correctamente.");
-
-      // Limpia el formulario del modal
       setClienteData({
         nombre: "",
         documento: "",
@@ -364,7 +353,6 @@ const RegistroMuestras = () => {
         error.response?.data?.detalles || "⚠ Error en el registro."
       );
     }
-
     setRegistrando(false);
   };
 
@@ -377,8 +365,8 @@ const RegistroMuestras = () => {
       {error && <Alert severity="error" sx={{ mb: 2 }}>{error}</Alert>}
       {success && <Alert severity="success" sx={{ mb: 2 }}>{success}</Alert>}
 
-      {/* Formulario principal para la MUESTRA */}
       <form onSubmit={handleSubmit} autoComplete="off">
+        {/* Selección de Tipo de Muestra */}
         <Select
           fullWidth
           name="tipoMuestra"
@@ -386,13 +374,13 @@ const RegistroMuestras = () => {
           onChange={handleChange}
           displayEmpty
           sx={{ mb: 2 }}
-          autoComplete="off"
         >
-          <MenuItem value="">tipo de muestra</MenuItem>
+          <MenuItem value="">Tipo de Muestra</MenuItem>
           <MenuItem value="Agua">Agua</MenuItem>
           <MenuItem value="Suelo">Suelo</MenuItem>
         </Select>
 
+        {/* Selección de Tipo de Muestreo */}
         <Select
           fullWidth
           name="tipoMuestreo"
@@ -400,14 +388,12 @@ const RegistroMuestras = () => {
           onChange={handleChange}
           displayEmpty
           sx={{ mb: 2 }}
-          autoComplete="off"
         >
-          <MenuItem value="">tipo de muestreo</MenuItem>
+          <MenuItem value="">Tipo de Muestreo</MenuItem>
           <MenuItem value="Simple">Simple</MenuItem>
           <MenuItem value="Completo">Completo</MenuItem>
           <MenuItem value="Otro">Otro</MenuItem>
         </Select>
-
         {formData.tipoMuestreo === "Otro" && (
           <TextField
             fullWidth
@@ -416,10 +402,50 @@ const RegistroMuestras = () => {
             value={formData.tipoMuestreoOtro}
             onChange={handleChange}
             sx={{ mb: 2 }}
-            autoComplete="off"
           />
         )}
 
+        {/* La selección de Tipo de Agua solo se muestra si el Tipo de Muestra es Agua */}
+        {formData.tipoMuestra === "Agua" && (
+          <>
+            <Select
+              fullWidth
+              name="tipoAgua"
+              value={formData.tipoAgua}
+              onChange={handleChange}
+              displayEmpty
+              sx={{ mb: 2 }}
+            >
+              <MenuItem value="">Tipo de Agua</MenuItem>
+              <MenuItem value="Potable">Potable</MenuItem>
+              <MenuItem value="Natural">Natural</MenuItem>
+              <MenuItem value="Residual">Residual</MenuItem>
+              <MenuItem value="Otra">Otra</MenuItem>
+            </Select>
+            {formData.tipoAgua === "Otra" && (
+              <>
+                <TextField
+                  fullWidth
+                  label="Descripción"
+                  name="descripcion"
+                  value={formData.descripcion}
+                  onChange={handleChange}
+                  sx={{ mb: 2 }}
+                />
+                <TextField
+                  fullWidth
+                  label="Tipo Personalizado"
+                  name="tipoPersonalizado"
+                  value={formData.tipoPersonalizado}
+                  onChange={handleChange}
+                  sx={{ mb: 2 }}
+                />
+              </>
+            )}
+          </>
+        )}
+
+        {/* Número de Documento y Validación */}
         <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
           <TextField
             fullWidth
@@ -427,7 +453,6 @@ const RegistroMuestras = () => {
             name="documento"
             value={formData.documento}
             onChange={handleChange}
-            autoComplete="off"
           />
           <Button
             variant="outlined"
@@ -440,20 +465,18 @@ const RegistroMuestras = () => {
           {userValidationError && (
             <Button
               variant="outlined"
-              onClick={handleOpenModal}
+              onClick={() => setOpenModal(true)}
               sx={{ ml: 1, height: "56px" }}
             >
               Registrar Cliente
             </Button>
           )}
         </Box>
-
         {userValidationError && (
           <Alert severity="error" sx={{ mb: 2 }}>
             {userValidationError}
           </Alert>
         )}
-
         {clienteEncontrado && (
           <Box sx={{ mb: 2 }}>
             <Typography variant="body1" sx={{ fontWeight: "bold" }}>
@@ -471,6 +494,7 @@ const RegistroMuestras = () => {
           </Box>
         )}
 
+        {/* Fecha y Hora */}
         <TextField
           fullWidth
           type="datetime-local"
@@ -478,15 +502,14 @@ const RegistroMuestras = () => {
           value={formData.fechaHora}
           onChange={handleChange}
           sx={{ mb: 2 }}
-          autoComplete="off"
         />
 
+        {/* Selección de Análisis */}
         <Typography variant="body1" sx={{ mb: 1 }}>
           Análisis a realizar:
         </Typography>
-
-        {formData.tipoMuestra === "Agua" && (
-          analisisAgua.map((categoria, index) => (
+        {formData.tipoMuestra === "Agua" &&
+          analisisDisponibles.map((categoria, index) => (
             <Accordion key={index} sx={{ mb: 1, boxShadow: 2 }}>
               <AccordionSummary
                 expandIcon={<ExpandMoreIcon />}
@@ -512,11 +535,9 @@ const RegistroMuestras = () => {
                 ))}
               </AccordionDetails>
             </Accordion>
-          ))
-        )}
-
-        {formData.tipoMuestra === "Suelo" && (
-          analisisSuelo.map((categoria, index) => (
+          ))}
+        {formData.tipoMuestra === "Suelo" &&
+          analisisDisponibles.map((categoria, index) => (
             <Accordion key={index} sx={{ mb: 1, boxShadow: 2 }}>
               <AccordionSummary
                 expandIcon={<ExpandMoreIcon />}
@@ -542,8 +563,7 @@ const RegistroMuestras = () => {
                 ))}
               </AccordionDetails>
             </Accordion>
-          ))
-        )}
+          ))}
 
         <Button
           type="submit"
@@ -557,7 +577,7 @@ const RegistroMuestras = () => {
         </Button>
       </form>
 
-      {/* Modal para registrar cliente */}
+      {/* Modal para registrar Cliente */}
       <Modal
         open={openModal}
         onClose={handleCloseModal}
@@ -565,18 +585,20 @@ const RegistroMuestras = () => {
         BackdropComponent={Backdrop}
         BackdropProps={{ timeout: 500 }}
       >
-        <Fade in={openModal} onExited={() => {
-          // Reinicia los campos al cerrar el modal
-          setClienteData({
-            nombre: "",
-            documento: "",
-            telefono: "",
-            direccion: "",
-            email: "",
-            password: "",
-            razonSocial: "",
-          });
-        }}>
+        <Fade
+          in={openModal}
+          onExited={() => {
+            setClienteData({
+              nombre: "",
+              documento: "",
+              telefono: "",
+              direccion: "",
+              email: "",
+              password: "",
+              razonSocial: "",
+            });
+          }}
+        >
           <Box
             sx={{
               position: "absolute",
@@ -592,7 +614,6 @@ const RegistroMuestras = () => {
             <Typography variant="h6" gutterBottom>
               Registrar Cliente
             </Typography>
-
             <TextField
               fullWidth
               label="Nombre Completo"
@@ -600,7 +621,6 @@ const RegistroMuestras = () => {
               value={clienteData.nombre}
               onChange={handleClienteChange}
               sx={{ mb: 2 }}
-              autoComplete="off"
             />
             <TextField
               fullWidth
@@ -609,7 +629,6 @@ const RegistroMuestras = () => {
               value={clienteData.documento}
               onChange={handleClienteChange}
               sx={{ mb: 2 }}
-              autoComplete="off"
             />
             <TextField
               fullWidth
@@ -618,7 +637,6 @@ const RegistroMuestras = () => {
               value={clienteData.telefono}
               onChange={handleClienteChange}
               sx={{ mb: 2 }}
-              autoComplete="off"
             />
             <TextField
               fullWidth
@@ -627,7 +645,6 @@ const RegistroMuestras = () => {
               value={clienteData.direccion}
               onChange={handleClienteChange}
               sx={{ mb: 2 }}
-              autoComplete="off"
             />
             <TextField
               fullWidth
@@ -636,7 +653,6 @@ const RegistroMuestras = () => {
               value={clienteData.email}
               onChange={handleClienteChange}
               sx={{ mb: 2 }}
-              autoComplete="off"
             />
             <TextField
               fullWidth
@@ -646,7 +662,6 @@ const RegistroMuestras = () => {
               value={clienteData.password}
               onChange={handleClienteChange}
               sx={{ mb: 2 }}
-              autoComplete="new-password"
             />
             <TextField
               fullWidth
@@ -655,9 +670,7 @@ const RegistroMuestras = () => {
               value={clienteData.razonSocial}
               onChange={handleClienteChange}
               sx={{ mb: 2 }}
-              autoComplete="off"
             />
-
             {registroError && (
               <Alert severity="error" sx={{ mb: 2 }}>
                 {registroError}
@@ -668,7 +681,6 @@ const RegistroMuestras = () => {
                 {registroExito}
               </Alert>
             )}
-
             <Button
               variant="contained"
               color="primary"
