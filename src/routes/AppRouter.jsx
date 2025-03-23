@@ -41,17 +41,19 @@ const AppRouter = () => {
             </PrivateRoute>
           }
         />
-        {/* Ruta de usuarios: solo administradores y super administradores */}
+
+        {/* Ruta de usuarios: permitida para administradores, super administradores y laboratoristas */}
         <Route
           path="/users"
           element={
-            <PrivateRoute allowedRoles={["administrador", "super_admin"]}>
+            <PrivateRoute allowedRoles={["administrador", "super_admin", "laboratorista"]}>
               <Layout>
                 <Users />
               </Layout>
             </PrivateRoute>
           }
         />
+
         <Route
           path="/samples"
           element={
@@ -72,6 +74,7 @@ const AppRouter = () => {
             </PrivateRoute>
           }
         />
+
         {/* Ruta de registro de muestras: restringida a ciertos roles */}
         <Route
           path="/registro-muestras"
